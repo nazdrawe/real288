@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Duel — Affiliate Portal</title>
+<style>
+  :root {
+    --bg: #0c0f22;
+    --card: #1c203b;
+    --field: #0e1124;
+    --field-border: #2a2f52;
+    --tabbar: #161a31;
+    --pill: #2d3358;
+    --text: #ffffff;
+    --muted: #8b91b4;
+    --muted-2: #5f6590;
+    --accent: #3e44f6;
+    --accent-hover: #353bdd;
+    --accent-soft: rgba(62,68,246,.18);
+    /* shared easing + duration for the whole switch */
+    --ease: cubic-bezier(.45,.05,.2,1);
+    --dur: .3s;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 56px 16px 60px;
+  }
+  .wrap { width: 100%; max-width: 402px; }
+
+  /* Header */
+  .brand { text-align: center; margin-bottom: 34px; }
+  .brand h1 { font-size: 68px; font-weight: 800; letter-spacing: -3px; line-height: 1; }
+  .brand p { color: var(--muted); font-size: 19px; margin-top: 12px; font-weight: 400; }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border-radius: 22px;
+    padding: 28px 24px 30px;
+  }
+
+  /* ---------- Tabs with sliding pill ---------- */
+  .tabs {
+    position: relative;
+    display: flex;
+    background: var(--tabbar);
+    border-radius: 14px;
+    padding: 6px;
+    margin-bottom: 28px;
+  }
+  .tab-pill {
+    position: absolute;
+    top: 6px; left: 6px;
+    width: calc(50% - 6px);
+    height: calc(100% - 12px);
+    background: var(--pill);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    transform: translateX(0);
+    transition: transform var(--dur) var(--ease);
+    z-index: 0;
+  }
+  .tab-pill.right { transform: translateX(100%); }
+  .tab {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: color .25s ease;
+  }
+  .tab.active { color: #fff; }
+
+  /* ---------- Sliding / fading panel ---------- */
+  .panel { position: relative; transition: height var(--dur) var(--ease); }
+  .pane {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity .22s ease, transform var(--dur) var(--ease);
+  }
+  .pane.on {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity .3s ease .08s, transform .34s var(--ease) .06s;
+  }
+
+  /* Fields */
+  .field { margin-bottom: 22px; }
+  .field:first-child { margin-top: 2px; }
+  .field label { display: block; font-size: 17px; color: var(--muted); margin-bottom: 11px; }
+  .input-row { position: relative; }
+  input {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid transparent;
+    border-radius: 14px;
+    padding: 19px 18px;
+    font-size: 17px;
+    color: #fff;
+    caret-color: #4a6bff;            /* bright blue text cursor */
+    outline: none;
+    transition: border-color .15s, background .15s;
+    font-family: inherit;
+  }
+  input::placeholder { color: var(--muted-2); }
+  /* focus = soft lavender border + slightly lifted field (matches the real portal) */
+  input:focus { border-color: #5b6193; background: #141830; }
+  /* large white dots while typing a password */
+  input[type="password"] { letter-spacing: 2px; }
+  .eye {
+    position: absolute; right: 16px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 6px; display: flex;
+  }
+  .forgot { text-align: right; margin: 16px 2px 0; }
+  .forgot a { color: var(--muted); font-size: 17px; text-decoration: underline; cursor: pointer; }
+
+  /* Button */
+  .btn {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 20px;
+    font-size: 21px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, transform .05s;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn:active { transform: translateY(1px); }
+
+  /* ---------- Cloudflare Turnstile widget (visual) ---------- */
+  .cf {
+    margin: 28px 0 0;
+    background: #2b2b2b;
+    border: 1px solid #5a5a5a;
+    border-radius: 6px;
+    height: 65px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  .cf-left { display: flex; align-items: center; gap: 12px; }
+  .cf-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .cf-spinner {
+    width: 26px; height: 26px; flex: 0 0 auto;
+    border: 3px solid rgba(120,180,120,.3);
+    border-top-color: #3aa54a;
+    border-radius: 50%;
+    animation: cfspin .8s linear infinite;
+  }
+  @keyframes cfspin { to { transform: rotate(360deg); } }
+  .cf-text { color: #e6e6e6; font-size: 16px; }
+  .cf-right { text-align: right; line-height: 1.15; }
+  .cf-logo { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .cf-logo svg { width: 34px; height: 22px; }
+  .cf-logo span { color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; }
+  .cf-links { color: #bdbdbd; font-size: 11px; margin-top: 2px; }
+  .cf-links a { color: #bdbdbd; text-decoration: underline; }
+
+  /* ---------- Register info panel ---------- */
+  .reg-head { font-size: 24px; font-weight: 800; margin: 4px 0 14px; }
+  .reg-body { color: var(--muted); font-size: 17px; line-height: 1.55; margin-bottom: 26px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab-pill, .panel, .pane, .pane.on { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <h1>Duel</h1>
+      <p>Affiliate portal</p>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <div class="tab-pill" id="tabPill"></div>
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <div class="panel" id="panel">
+
+        <!-- ================= LOGIN ================= -->
+        <form id="login-form" class="pane on" onsubmit="return doLogin(event)">
+          <div class="field">
+            <label>Partner ID *</label>
+            <div class="input-row"><input type="text" id="login-partner" required /></div>
+          </div>
+          <div class="field">
+            <label>Username *</label>
+            <div class="input-row"><input type="text" id="login-user" required /></div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Password *</label>
+            <div class="input-row">
+              <input type="password" id="login-pass" required />
+              <button type="button" class="eye" onclick="toggleEye('login-pass', this)" aria-label="Show password">
+                <svg class="i" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="forgot"><a onclick="forgot(event)">Forgot password?</a></div>
+
+          <!-- Cloudflare Turnstile — visual placeholder.
+               To use the real widget, delete this .cf block, add
+                 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+               in <head>, and drop in:
+                 <div class="cf-turnstile" data-sitekey="YOUR_SITEKEY"></div> -->
+          <div class="cf" id="cfWidget">
+            <div class="cf-left">
+              <div class="cf-spinner" id="cfSpinner"></div>
+              <div class="cf-check" id="cfCheck" style="display:none;background:#3aa54a;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <div class="cf-text" id="cfText">Verifying...</div>
+            </div>
+            <div class="cf-right">
+              <div class="cf-logo">
+                <svg viewBox="0 0 48 32" fill="none"><path d="M34 22H14a7 7 0 0 1 2-13 9 9 0 0 1 17 2 6 6 0 0 1 1 11z" fill="#f6821f"/><path d="M38 22h-6a6 6 0 0 0-1-11 9 9 0 0 0-1-2 8 8 0 0 1 14 5 5 5 0 0 1-6 8z" fill="#fbad41"/></svg>
+                <span>CLOUDFLARE</span>
+              </div>
+              <div class="cf-links"><a href="#">Privacy</a> &bull; <a href="#">Help</a></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn" style="margin-top:26px;">Log in</button>
+        </form>
+
+        <!-- ================= REGISTER ================= -->
+        <div id="register-form" class="pane">
+          <h2 class="reg-head">Register with Duel.com</h2>
+          <p class="reg-body">Create your account on Duel.com first. Then come back here and log in with your partner id, username, and password.</p>
+          <a class="btn" href="https://duel.com" target="_blank" rel="noopener">Register with Duel.com</a>
+        </div>
+
+      </div><!-- /panel -->
+    </div>
+  </div>
+
+<script>
+  /* ---------- Sliding panel plumbing ---------- */
+  const panel = document.getElementById('panel');
+  const pill  = document.getElementById('tabPill');
+  const panes = {
+    login:    document.getElementById('login-form'),
+    register: document.getElementById('register-form'),
+  };
+  let current = 'login';
+
+  function fitPanel() { panel.style.height = panes[current].offsetHeight + 'px'; }
+
+  function setPane(key) {
+    Object.values(panes).forEach(p => p.classList.remove('on'));
+    panes[key].classList.add('on');
+    current = key;
+    fitPanel();
+  }
+
+  function switchTab(which) {
+    document.getElementById('tab-login').classList.toggle('active', which === 'login');
+    document.getElementById('tab-register').classList.toggle('active', which === 'register');
+    pill.classList.toggle('right', which === 'register');
+    setPane(which);
+  }
+
+  window.addEventListener('load', () => setPane('login'));
+  window.addEventListener('resize', fitPanel);
+
+  /* ---------- Cloudflare widget animation (Verifying -> Success) ---------- */
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('cfSpinner').style.display = 'none';
+      document.getElementById('cfCheck').style.display = 'flex';
+      document.getElementById('cfText').textContent = 'Success!';
+    }, 1600);
+  });
+
+  /* ---------- Password eye ---------- */
+  function toggleEye(id, btn) {
+    const el = document.getElementById(id);
+    const show = el.type === 'password';
+    el.type = show ? 'text' : 'password';
+    btn.querySelector('.i').innerHTML = show
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+  /* ---------- Login (demo) ---------- */
+  function doLogin(e) {
+    e.preventDefault();
+    // DEMO: no real auth. Replace with a call to your auth endpoint.
+    alert('Connect this to your auth API to sign partners in.');
+    return false;
+  }
+  function forgot(e){ e.preventDefault(); alert('Hook this up to your password-reset flow.'); }
+</script>
+</body>
+</html>
